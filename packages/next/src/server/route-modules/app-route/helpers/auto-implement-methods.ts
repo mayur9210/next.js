@@ -78,5 +78,21 @@ export function autoImplementMethods(
     )
   }
 
+  // After any automatic implementations above, compute the final Allow header
+  // that should be included on 405 responses for unsupported methods.
+  const finalAllowed = Array.from(implemented).sort().join(', ')
+
+  // Replace any remaining 405 handlers (methods that are not implemented)
+  // with a 405 response that includes the Allow header according to RFC 9110. https://www.rfc-editor.org/rfc/rfc9110.html
+  for (const method of HTTP_METHODS) {
+    if (methods[method] === handleMethodNotAllowedResponse) {
+      methods[method] = () =>
+        new Response(null, {
+          status: 405,
+          headers: finalAllowed ? { Allow: finalAllowed } : undefined,
+        })
+    }
+  }
+  
   return methods
 }
